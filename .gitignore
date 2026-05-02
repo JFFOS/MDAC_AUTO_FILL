@@ -1,0 +1,14 @@
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.idea/
+.vscode/
+.DS_Store
+# Extension signing keys
+.keys/
+
+# Local debug artifacts
+captcha_debug/
+/chrome_extension.crx

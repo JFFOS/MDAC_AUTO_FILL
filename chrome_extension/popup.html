@@ -1,0 +1,49 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <link rel="stylesheet" href="popup.css">
+  <title>MDAC Auto-Fill</title>
+</head>
+<body>
+  <div class="popup">
+    <h1>MDAC Auto-Fill</h1>
+
+    <label class="field">
+      Frequent traveller
+      <select id="travellerSelect"></select>
+    </label>
+
+    <div class="actions">
+      <button id="btnAdd" class="primary">+ Add</button>
+      <button id="btnEdit">Edit</button>
+      <button id="btnDelete" class="danger">Delete</button>
+    </div>
+
+    <div class="actions" style="margin-top: 6px;">
+      <button id="btnFill" class="primary">Open MDAC &amp; Auto-Fill</button>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <hr style="border:none; border-top:1px solid var(--border); margin:14px 0;">
+
+    <div class="row" style="justify-content: space-between;">
+      <strong style="font-size:12px;">MDAC dropdown options</strong>
+      <div style="display:flex; gap:6px;">
+        <button id="btnDownload" title="Download cached options as JSON">Download</button>
+        <button id="btnRefresh">Refresh</button>
+      </div>
+    </div>
+    <div id="optionsStatus" class="hint"></div>
+
+    <p class="hint">
+      Travellers can be saved with any fields blank — auto-fill skips blanks
+      and shows a banner on MDAC listing what's left for you. You still
+      solve the CAPTCHA and click <strong>SUBMIT</strong> yourself.
+    </p>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
