@@ -22,7 +22,7 @@ function getNested(obj, path) {
 
 function fillSelectOptions(sel, list) {
   if (!list || list.length === 0) {
-    sel.innerHTML = '<option value="">(refresh options from popup)</option>';
+    sel.innerHTML = '<option value="">-- select --</option>';
     return false;
   }
   sel.innerHTML =
@@ -187,18 +187,47 @@ function listBlankPaths(data) {
   return paths;
 }
 
+function showBanner(html, type = "info") {
+  document.querySelectorAll(".banner").forEach((n) => n.remove());
+  const div = document.createElement("div");
+  div.classList.add("banner");
+  if (type !== "info") div.classList.add(type);
+  div.innerHTML = `<div>${html}</div><span class="close">×</span>`;
+  div.querySelector(".close").addEventListener("click", () => div.remove());
+  document.body.appendChild(div);
+}
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   const data = readForm();
   const { travellers = [] } = await chrome.storage.local.get("travellers");
+
+  // Duplicate check: Ignore ID, compare all other fields
+  const isDuplicate = travellers.some((t) => {
+    if (t.id === data.id) return false; // Don't count self when editing
+    const { id: _1, ...a } = t;
+    const { id: _2, ...b } = data;
+    return JSON.stringify(a) === JSON.stringify(b);
+  });
+
+  if (isDuplicate) {
+    showBanner("<strong>Duplicate!</strong> An identical entry already exists.", "warn");
+    return;
+  }
+
   const idx = travellers.findIndex((t) => t.id === data.id);
   if (idx >= 0) travellers[idx] = data;
   else travellers.push(data);
+
   await chrome.storage.local.set({ travellers, currentId: data.id });
+
   const blanks = listBlankPaths(data);
-  statusEl.textContent = blanks.length
-    ? `Saved. ${blanks.length} field(s) blank: ${blanks.join(", ")} — you can close this tab.`
-    : "Saved — you can close this tab.";
+  const msg = blanks.length
+    ? `<strong>Saved.</strong> ${blanks.length} field(s) blank: ${blanks.join(", ")} — <strong>you can close this tab.</strong>`
+    : "<strong>Saved.</strong> You can close this tab.";
+
+  showBanner(msg, "success");
+  statusEl.textContent = "";
 });
 
 document.getElementById("btnCancel").addEventListener("click", () => window.close());
