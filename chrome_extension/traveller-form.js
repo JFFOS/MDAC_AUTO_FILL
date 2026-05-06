@@ -46,17 +46,28 @@ function populateSelects(opts) {
 function wireStateToCity(citiesByState) {
   const stateSel = form.querySelector('[name="accommodation.state"]');
   const citySel = form.querySelector('[name="accommodation.city"]');
-  if (!stateSel || !citySel) return;
+  if (!stateSel || !citySel) return () => {};
   const lower = {};
   for (const k of Object.keys(citiesByState || {})) lower[k.toLowerCase().trim()] = citiesByState[k];
+  
   const update = (preserveValue) => {
     const v = (stateSel.value || "").toLowerCase().trim();
     const list = (citiesByState && citiesByState[stateSel.value]) || lower[v] || [];
     fillSelectOptions(citySel, list);
-    if (preserveValue && list.includes(preserveValue)) citySel.value = preserveValue;
+    if (preserveValue) {
+      citySel.value = preserveValue;
+      if (citySel.value !== preserveValue) {
+        const o = document.createElement("option");
+        o.value = preserveValue;
+        o.textContent = `${preserveValue} (saved)`;
+        citySel.prepend(o);
+        citySel.value = preserveValue;
+      }
+    }
   };
+  
   stateSel.addEventListener("change", () => update(null));
-  update();
+  return update;
 }
 
 function readForm() {
@@ -134,13 +145,9 @@ async function init() {
   const hardcoded = (typeof HARDCODED_OPTIONS !== "undefined" && HARDCODED_OPTIONS.nationality?.length)
     ? HARDCODED_OPTIONS : null;
   const opts = (mdac_options && mdac_options.options) || hardcoded || {};
-  const missing = populateSelects(opts);
-  wireStateToCity(opts.cities_by_state || {});
+  populateSelects(opts);
+  const updateCity = wireStateToCity(opts.cities_by_state || (hardcoded && hardcoded.cities_by_state) || {});
   wireDateModeControls();
-  if (missing.length > 0) {
-    warningEl.style.display = "block";
-    warningEl.textContent = `Dropdown options missing: ${missing.join(", ")}.`;
-  }
 
   if (editingId) {
     const t = travellers.find((x) => x.id === editingId);
@@ -151,24 +158,8 @@ async function init() {
     const display = t.nickname || t.personal?.full_name || "(unnamed)";
     titleEl.textContent = `Edit: ${display}`;
     writeForm(t);
-    const stateSel = form.querySelector('[name="accommodation.state"]');
-    const citySel = form.querySelector('[name="accommodation.city"]');
-    if (stateSel && t.accommodation?.state) {
-      // Repopulate city for the saved state, preserving the saved city value
-      const opts = (await chrome.storage.local.get("mdac_options")).mdac_options?.options || {};
-      wireStateToCity(opts.cities_by_state || {});
-      stateSel.dispatchEvent(new Event("change"));
-      if (citySel && t.accommodation.city) {
-        // Try setting; if not in current options, add it as a transient option
-        citySel.value = t.accommodation.city;
-        if (citySel.value !== t.accommodation.city) {
-          const o = document.createElement("option");
-          o.value = t.accommodation.city;
-          o.textContent = `${t.accommodation.city} (saved)`;
-          citySel.prepend(o);
-          citySel.value = t.accommodation.city;
-        }
-      }
+    if (t.accommodation?.state) {
+      updateCity(t.accommodation.city);
     }
   }
 }
@@ -284,7 +275,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
   const newOpts = changes.mdac_options.newValue?.options || hardcoded || {};
   const snapshot = readForm();
   populateSelects(newOpts);
-  wireStateToCity(newOpts.cities_by_state || {});
+  wireStateToCity(newOpts.cities_by_state || (hardcoded && hardcoded.cities_by_state) || {});
   writeForm(snapshot);
   warningEl.style.display = "none";
 });
