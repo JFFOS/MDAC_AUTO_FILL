@@ -197,37 +197,80 @@ function showBanner(html, type = "info") {
   document.body.appendChild(div);
 }
 
+function getNormalizedData(obj) {
+  const clean = (val) => {
+    if (val === null || val === undefined) return "";
+    if (typeof val === "object" && !Array.isArray(val)) {
+      const c = {};
+      Object.keys(val).sort().forEach((k) => {
+        if (k === "id") return;
+        const v = clean(val[k]);
+        if (v !== "") c[k] = v;
+      });
+      return Object.keys(c).length > 0 ? c : "";
+    }
+    return String(val).trim();
+  };
+  const out = {};
+  Object.keys(obj).sort().forEach((k) => {
+    if (k === "id") return;
+    const v = clean(obj[k]);
+    if (v !== "") out[k] = v;
+  });
+  return out;
+}
+
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  const data = readForm();
-  const { travellers = [] } = await chrome.storage.local.get("travellers");
+  const btnSave = form.querySelector('button[type="submit"]');
+  if (btnSave.disabled) return;
+  btnSave.disabled = true;
 
-  // Duplicate check: Ignore ID, compare all other fields
-  const isDuplicate = travellers.some((t) => {
-    if (t.id === data.id) return false; // Don't count self when editing
-    const { id: _1, ...a } = t;
-    const { id: _2, ...b } = data;
-    return JSON.stringify(a) === JSON.stringify(b);
-  });
+  try {
+    const data = readForm();
+    const { travellers = [] } = await chrome.storage.local.get("travellers");
 
-  if (isDuplicate) {
-    showBanner("<strong>Duplicate!</strong> An identical entry already exists.", "warn");
-    return;
+    const newNorm = JSON.stringify(getNormalizedData(data));
+
+    // 1. Check if it's an exact duplicate of ANOTHER entry
+    const otherDuplicate = travellers.some((t) => {
+      if (t.id === data.id) return false;
+      return JSON.stringify(getNormalizedData(t)) === newNorm;
+    });
+
+    if (otherDuplicate) {
+      showBanner("<strong>Duplicate!</strong> An identical entry already exists.", "warn");
+      btnSave.disabled = false;
+      return;
+    }
+
+    // 2. If editing, check if anything actually changed
+    const existing = travellers.find((t) => t.id === data.id);
+    if (existing && JSON.stringify(getNormalizedData(existing)) === newNorm) {
+      showBanner("<strong>No changes.</strong> Information is already up to date.");
+      btnSave.disabled = false;
+      return;
+    }
+
+    const idx = travellers.findIndex((t) => t.id === data.id);
+    if (idx >= 0) travellers[idx] = data;
+    else travellers.push(data);
+
+    await chrome.storage.local.set({ travellers, currentId: data.id });
+
+    const blanks = listBlankPaths(data);
+    const msg = blanks.length
+      ? `<strong>Saved.</strong> ${blanks.length} field(s) blank: ${blanks.join(", ")} — <strong>you can close this tab.</strong>`
+      : "<strong>Saved.</strong> You can close this tab.";
+
+    showBanner(msg, "success");
+    statusEl.textContent = "";
+  } catch (err) {
+    console.error("Save failed:", err);
+    showBanner("<strong>Error:</strong> Could not save.", "error");
+  } finally {
+    btnSave.disabled = false;
   }
-
-  const idx = travellers.findIndex((t) => t.id === data.id);
-  if (idx >= 0) travellers[idx] = data;
-  else travellers.push(data);
-
-  await chrome.storage.local.set({ travellers, currentId: data.id });
-
-  const blanks = listBlankPaths(data);
-  const msg = blanks.length
-    ? `<strong>Saved.</strong> ${blanks.length} field(s) blank: ${blanks.join(", ")} — <strong>you can close this tab.</strong>`
-    : "<strong>Saved.</strong> You can close this tab.";
-
-  showBanner(msg, "success");
-  statusEl.textContent = "";
 });
 
 document.getElementById("btnCancel").addEventListener("click", () => window.close());
