@@ -5,12 +5,22 @@
   "description": "Save frequent travellers and auto-fill the Malaysia Digital Arrival Card (MDAC) form.",
   "permissions": ["storage", "tabs"],
   "host_permissions": ["https://imigresen-online.imi.gov.my/*"],
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  },
   "background": {
     "service_worker": "background.js"
   },
   "action": {
     "default_popup": "popup.html",
-    "default_title": "MDAC Auto-Fill"
+    "default_title": "MDAC Auto-Fill",
+    "default_icon": {
+      "16": "icon.png",
+      "48": "icon.png",
+      "128": "icon.png"
+    }
   },
   "content_scripts": [
     {
@@ -21,7 +31,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["traveller-form.html"],
+      "resources": ["traveller-form.html", "traveller-form.js", "options-data.js", "popup.css"],
       "matches": ["<all_urls>"]
     }
   ]

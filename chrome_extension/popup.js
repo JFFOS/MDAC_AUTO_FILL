@@ -2,7 +2,6 @@ const MDAC_URL = "https://imigresen-online.imi.gov.my/mdac/main?registerMain";
 
 const sel = document.getElementById("travellerSelect");
 const status = document.getElementById("status");
-const optionsStatus = document.getElementById("optionsStatus");
 
 function setStatus(msg, isError = false) {
   status.textContent = msg || "";
@@ -48,24 +47,6 @@ async function openInCurrentWindow(url) {
   return chrome.tabs.create({ url, windowId });
 }
 
-async function loadOptionsStatus() {
-  const { mdac_options } = await chrome.storage.local.get("mdac_options");
-  if (!mdac_options) {
-    optionsStatus.textContent = "Not yet scraped — click Refresh.";
-    return;
-  }
-  const when = new Date(mdac_options.scraped_at).toLocaleString();
-  const opts = mdac_options.options || {};
-  const counts = Object.entries(opts)
-    .filter(([k]) => k !== "cities_by_state")
-    .map(([k, v]) => `${k}=${v ? v.length : 0}`)
-    .join(", ");
-  const cbs = opts.cities_by_state || {};
-  const cityCount = Object.values(cbs).reduce((a, b) => a + (b ? b.length : 0), 0);
-  optionsStatus.textContent =
-    `Last refreshed: ${when}\n${counts}; cities=${cityCount} across ${Object.keys(cbs).length} states`;
-  optionsStatus.style.whiteSpace = "pre-line";
-}
 
 sel.addEventListener("change", () => {
   chrome.storage.local.set({ currentId: sel.value });
@@ -124,31 +105,10 @@ document.getElementById("btnFill").addEventListener("click", async () => {
   setTimeout(() => window.close(), 400);
 });
 
-// Live progress while a scrape is running (sent from content.js).
-chrome.runtime.onMessage.addListener((msg) => {
-  if (msg && msg.type === "scrape_progress") {
-    setStatus(`Scraping cities ${msg.current}/${msg.total}: ${msg.state}`);
-  }
-});
-
-document.getElementById("btnRefresh").addEventListener("click", async () => {
-  setStatus("Opening MDAC tab to scrape (~30-60s)...");
-  try {
-    const resp = await chrome.runtime.sendMessage({ type: "scrape", active: true });
-    if (resp && resp.ok) {
-      setStatus("Options refreshed.");
-      await loadOptionsStatus();
-    } else {
-      setStatus("Refresh failed: " + (resp?.error || "unknown"), true);
-    }
-  } catch (e) {
-    setStatus("Refresh failed: " + (e.message || e), true);
-  }
-});
 
 document.getElementById("btnDownload").addEventListener("click", async () => {
   const { mdac_options } = await chrome.storage.local.get("mdac_options");
-  if (!mdac_options) return setStatus("Nothing cached yet — click Refresh first.", true);
+  if (!mdac_options) return setStatus("Nothing cached yet.", true);
   const json = JSON.stringify(mdac_options, null, 2);
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -162,9 +122,8 @@ document.getElementById("btnDownload").addEventListener("click", async () => {
 });
 
 loadTravellers();
-loadOptionsStatus();
 
-// Only show Download button in developer mode (unpacked)
+// devSection (Download) is only shown when running unpacked (no update_url)
 if (chrome.runtime.getManifest().update_url) {
-  document.getElementById("btnDownload").style.display = "none";
+  document.getElementById("devSection").style.display = "none";
 }

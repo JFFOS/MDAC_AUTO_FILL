@@ -131,15 +131,15 @@ async function init() {
     "mdac_options",
     "travellers",
   ]);
-  const opts = (mdac_options && mdac_options.options) || {};
+  const hardcoded = (typeof HARDCODED_OPTIONS !== "undefined" && HARDCODED_OPTIONS.nationality?.length)
+    ? HARDCODED_OPTIONS : null;
+  const opts = (mdac_options && mdac_options.options) || hardcoded || {};
   const missing = populateSelects(opts);
   wireStateToCity(opts.cities_by_state || {});
   wireDateModeControls();
   if (missing.length > 0) {
     warningEl.style.display = "block";
-    warningEl.textContent =
-      `Dropdown options missing: ${missing.join(", ")}. ` +
-      `Open the extension popup and click "Refresh".`;
+    warningEl.textContent = `Dropdown options missing: ${missing.join(", ")}.`;
   }
 
   if (editingId) {
@@ -197,9 +197,8 @@ form.addEventListener("submit", async (e) => {
   await chrome.storage.local.set({ travellers, currentId: data.id });
   const blanks = listBlankPaths(data);
   statusEl.textContent = blanks.length
-    ? `Saved. ${blanks.length} field(s) blank: ${blanks.join(", ")}`
-    : "Saved.";
-  setTimeout(() => window.close(), blanks.length ? 2500 : 600);
+    ? `Saved. ${blanks.length} field(s) blank: ${blanks.join(", ")} — you can close this tab.`
+    : "Saved — you can close this tab.";
 });
 
 document.getElementById("btnCancel").addEventListener("click", () => window.close());
@@ -208,8 +207,9 @@ document.getElementById("btnCancel").addEventListener("click", () => window.clos
 // the user clicks Refresh in the popup while this form is open).
 chrome.storage.onChanged.addListener((changes, area) => {
   if (area !== "local" || !changes.mdac_options) return;
-  const newOpts = changes.mdac_options.newValue?.options || {};
-  // Preserve current values
+  const hardcoded = (typeof HARDCODED_OPTIONS !== "undefined" && HARDCODED_OPTIONS.nationality?.length)
+    ? HARDCODED_OPTIONS : null;
+  const newOpts = changes.mdac_options.newValue?.options || hardcoded || {};
   const snapshot = readForm();
   populateSelects(newOpts);
   wireStateToCity(newOpts.cities_by_state || {});

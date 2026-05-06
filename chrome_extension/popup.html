@@ -26,16 +26,14 @@
 
     <div id="status" class="status"></div>
 
-    <hr style="border:none; border-top:1px solid var(--border); margin:14px 0;">
-
-    <div class="row" style="justify-content: space-between;">
-      <strong style="font-size:12px;">MDAC dropdown options</strong>
-      <div style="display:flex; gap:6px;">
-        <button id="btnDownload" title="Download cached options as JSON">Download</button>
-        <button id="btnRefresh">Refresh</button>
+    <div id="devSection">
+      <hr style="border:none; border-top:1px solid var(--border); margin:14px 0;">
+      <div class="row" style="justify-content: space-between; align-items:center;">
+        <strong style="font-size:12px;">Dev tools</strong>
+        <button id="btnDownload" title="Download cached options as JSON">Download options</button>
       </div>
+      <div class="hint" style="margin-top:4px;">Run <code>python3 update_hardcoded_options.py</code> to refresh built-in options.</div>
     </div>
-    <div id="optionsStatus" class="hint"></div>
 
     <p class="hint">
       Travellers can be saved with any fields blank — auto-fill skips blanks
