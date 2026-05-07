@@ -165,7 +165,7 @@
     attempt("State", a.state, fillSelect);
     attempt("Postcode", a.postcode, fillText);
 
-    await new Promise((r) => setTimeout(r, 700));
+    await new Promise((r) => setTimeout(r, 1000));
     attempt("City", a.city, fillSelect);
     attempt("Country / Region Code", c.phone_country_code, fillSelect);
 
