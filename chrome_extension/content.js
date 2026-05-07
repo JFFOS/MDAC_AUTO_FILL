@@ -153,7 +153,6 @@
     attempt("Date of Passport Expiry", p.passport_expiry, fillDate);
     attempt("Email Address", c.email, fillText);
     attempt("Confirm Email Address", c.email, fillText);
-    attempt("Country / Region Code", c.phone_country_code, fillSelect);
     attempt("Mobile No.", c.phone_number, fillText);
 
     attempt("Date of Arrival", tr.arrival_date, fillDate);
@@ -164,9 +163,11 @@
     attempt("Accommodation of Stay", a.type, fillSelect);
     attempt("Address (In Malaysia)", a.address, fillText);
     attempt("State", a.state, fillSelect);
+    attempt("Postcode", a.postcode, fillText);
+
     await new Promise((r) => setTimeout(r, 700));
     attempt("City", a.city, fillSelect);
-    attempt("Postcode", a.postcode, fillText);
+    attempt("Country / Region Code", c.phone_country_code, fillSelect);
 
     console.log(
       `[MDAC] done. ${blanks.length} field(s) left blank:`,
